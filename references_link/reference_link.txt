@@ -1,0 +1,2 @@
+modeling_assumption
+lagrangian mechanics: https://interactivetextbooks.tudelft.nl/nb1140/content/Lagrangianmechanics.html

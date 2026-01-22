@@ -1,0 +1,35 @@
+import numpy as np
+import matplotlib.pyplot as plt
+
+# ----- parameters -----
+N = 2000               # number of dust particles
+dt = 0.02              # time step (seconds)
+steps = 200            # simulation steps
+g = np.array([0, 0, -9.81])  # gravity
+
+# ----- initial state -----
+pos = np.random.uniform(
+    low=[-10, -10, 5],
+    high=[10, 10, 10],
+    size=(N, 3)
+)
+vel = np.zeros((N, 3))
+
+# ----- simulation -----
+for _ in range(steps):
+    vel += g * dt              # v_{n+1} = v_n + g dt
+    pos += vel * dt            # x_{n+1} = x_n + v dt
+
+# ----- visualization -----
+fig = plt.figure()
+ax = fig.add_subplot(projection="3d")
+ax.scatter(pos[:,0], pos[:,1], pos[:,2], s=5)
+
+ax.set_xlabel("X")
+ax.set_ylabel("Y")
+ax.set_zlabel("Z")
+ax.set_xlim(-10, 10)
+ax.set_ylim(-10, 10)
+ax.set_zlim(0, 10)
+
+plt.show()

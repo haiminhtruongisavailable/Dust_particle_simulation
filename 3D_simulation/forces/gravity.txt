@@ -1,35 +1,76 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.animation import FuncAnimation
+import time
 
 # ----- parameters -----
-N = 2000               # number of dust particles
-dt = 0.02              # time step (seconds)
-steps = 200            # simulation steps
-g = np.array([0, 0, -9.81])  # gravity
+N = 2000
+dt = 0.01
+g = np.array([0, 0, -9.81])   # gravity
+k = 80.0                      # drag coefficient
+ceiling = 0.10
+floor = 0.0
 
 # ----- initial state -----
 pos = np.random.uniform(
-    low=[-10, -10, 5],
-    high=[10, 10, 10],
+    low=[-0.05, -0.05, 0.08],
+    high=[ 0.05,  0.05, 0.10],
     size=(N, 3)
 )
 vel = np.zeros((N, 3))
 
-# ----- simulation -----
-for _ in range(steps):
-    vel += g * dt              # v_{n+1} = v_n + g dt
-    pos += vel * dt            # x_{n+1} = x_n + v dt
-
-# ----- visualization -----
-fig = plt.figure()
+# ----- figure -----
+fig = plt.figure(figsize=(6,6))
 ax = fig.add_subplot(projection="3d")
-ax.scatter(pos[:,0], pos[:,1], pos[:,2], s=5)
 
-ax.set_xlabel("X")
-ax.set_ylabel("Y")
-ax.set_zlabel("Z")
-ax.set_xlim(-10, 10)
-ax.set_ylim(-10, 10)
-ax.set_zlim(0, 10)
+scat = ax.scatter(pos[:,0], pos[:,1], pos[:,2],
+                  s=2, alpha=0.6)
 
+ax.set_xlim(-0.05, 0.05)
+ax.set_ylim(-0.05, 0.05)
+ax.set_zlim(floor, ceiling)
+
+ax.set_xlabel("X (m)")
+ax.set_ylabel("Y (m)")
+ax.set_zlabel("Z (m)")
+
+# ----- control flags -----
+waiting = False
+wait_start = None
+
+# ----- update function -----
+def update(frame):
+    global pos, vel, waiting, wait_start
+
+    if waiting:
+        # check if 10 seconds have passed
+        if time.time() - wait_start >= 10:
+            # reset all particles to ceiling
+            pos[:,2] = ceiling
+            vel[:] = 0
+            waiting = False
+        # during waiting, just freeze
+        scat._offsets3d = (pos[:,0], pos[:,1], pos[:,2])
+        return scat,
+
+    # normal physics update
+    acc = g - k * vel
+    vel += acc * dt
+    pos += vel * dt
+
+    # floor collision: clamp to floor
+    hit = pos[:,2] < floor
+    pos[hit,2] = floor
+    vel[hit,2] = 0
+
+    # check if ALL particles are at floor
+    if np.all(pos[:,2] == floor):
+        waiting = True
+        wait_start = time.time()
+
+    scat._offsets3d = (pos[:,0], pos[:,1], pos[:,2])
+    return scat,
+
+# ----- animation -----
+ani = FuncAnimation(fig, update, frames=400, interval=30, blit=False)
 plt.show()

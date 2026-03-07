@@ -3,3 +3,4 @@ lagrangian mechanics: https://interactivetextbooks.tudelft.nl/nb1140/content/Lag
 air viscosity in physics: https://www.engineeringtoolbox.com/air-absolute-kinematic-viscosity-d_601.html
 C++ reference: https://en.cppreference.com/w/cpp/numeric/math/cos.html
 github source for full process: https://github.com/barbagroup/CFDPython?tab=readme-ov-file
+- Each step to make higher revolution through equation : first order --> second order 

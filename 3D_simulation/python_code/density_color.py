@@ -8,7 +8,7 @@ N_PARTICLES = 50
 DT = 0.032
 DOMAIN_SIZE = 10.0
 SCALE = WIDTH / DOMAIN_SIZE
-H = 1.2                     # Smoothing length (important for SPH)
+H = 1.2                     # invisable influence circle (used for SPH)| maximum length that one particle can feel another(woa:))
 MASS = 1.0                  # Mass of each dust cluster
 
 # ====================== INITIALIZATION ======================

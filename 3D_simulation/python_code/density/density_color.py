@@ -28,10 +28,11 @@ density = np.zeros(N_PARTICLES)
 
 def poly6(r, h):
     """Poly6 smoothing kernel --> density"""
-    q = r / h
+    q = r / h # q : rate of density (sense: crowded) (radius (of particle/ of functional circle))
     if q >= 1.0:
         return 0.0
-    return (315.0 / (64.0 * np.pi * h**9)) * (h**2 - r**2)**3
+    return (315.0 / (64.0 * np.pi * h**9)) * (h**2 - r**2)**3 #curve each index and pixel (sense:smoothlization)
+
 
 # ====================== MAIN LOOP ======================
 running = True
@@ -52,7 +53,7 @@ while running:
             r = np.linalg.norm(r_vec)
             if r < H and r > 1e-8:
                 influence = poly6(r, H) #inherit above
-                density[i] += influence * MASS
+                density[i] += influence * MASS # not just by range but also by mass.
                 density[j] += influence * MASS
 
     # Add self-density (each particle contributes to itself)
@@ -72,11 +73,16 @@ while running:
             pos[i, 1] = max(0.5, min(DOMAIN_SIZE - 0.5, pos[i, 1]))
 
         # Draw particle with color based on density (yellow = dense, orange = less)
-        color_intensity = int(255 - density[i] * 40)   # higher density = more yellow
-        color_intensity = max(100, min(255, color_intensity))
+                # Draw particle with color based on density
+        # Higher density = brighter yellow
+                # Draw particle with color based on density
+        # Higher density = Brighter and more yellow
+        brightness = int(100 + density[i] * 35)
+        brightness = max(70, min(255, brightness))
+        
         px = int(pos[i, 0] * SCALE)
         py = int((DOMAIN_SIZE - pos[i, 1]) * SCALE)
-        pygame.draw.circle(screen, (255, color_intensity, 60), (px, py), 8)
+        pygame.draw.circle(screen, (255, brightness, 50), (px, py), 8)
 
     # Draw visible red boundary
     box_x = int(0.5 * SCALE)

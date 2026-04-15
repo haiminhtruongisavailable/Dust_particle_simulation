@@ -3,19 +3,20 @@ import sys
 import numpy as np
 
 # ====================== PARAMETERS ======================
-WIDTH, HEIGHT = 600, 600
-N_PARTICLES = 10
+WIDTH, HEIGHT = 700, 700
+N_PARTICLES = 2                     # Increased a bit so effects are visible
 DT = 0.032
 DOMAIN_SIZE = 10.0
 SCALE = WIDTH / DOMAIN_SIZE
-H = 1.5                     # Smoothing length
+H = 1.6
 MASS = 1.0
-STIFFNESS = 80.0            # How strong the pressure push is
+STIFFNESS = 100.0                   # Pressure strength
+VISCOSITY = 0.08                    # New: Viscosity strength (friction between particles)
 
 # ====================== INITIALIZATION ======================
 pygame.init()
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption("DustCluster - Density + Pressure Force")
+pygame.display.set_caption("DustCluster Fluid Simulator - With Viscosity")
 clock = pygame.time.Clock()
 
 np.random.seed(42)
@@ -33,12 +34,18 @@ def poly6(r, h):
     return (315.0 / (64.0 * np.pi * h**9)) * (h**2 - r**2)**3
 
 def spiky_grad(r_vec, r, h):
-    """Spiky Gradient - used for pressure force (pushing)"""
     q = r / h
     if r < 1e-8 or q >= 1.0:
         return np.zeros(2)
     factor = -45.0 / (np.pi * h**6) * (1 - q**2)**2
     return factor * r_vec / r
+
+# ====================== VISCOSITY KERNEL ======================
+def viscosity_laplacian(r, h):
+    q = r / h
+    if q >= 1.0:
+        return 0.0
+    return 45.0 / (np.pi * h**6) * (1 - q)
 
 # ====================== MAIN LOOP ======================
 running = True
@@ -62,27 +69,39 @@ while running:
                 density[j] += influence * MASS
     density += MASS * poly6(0.0, H)
 
-    # 2. Calculate Pressure from Density
+    # 2. Calculate Pressure
     for i in range(N_PARTICLES):
         pressure[i] = STIFFNESS * (density[i] - 1.0)
 
-    # 3. Physics + Pressure Force
+    # 3. Physics + Pressure Force + Viscosity
     for i in range(N_PARTICLES):
         # Gravity
         vel[i, 1] += -9.81 * DT * 0.9
 
-        # Pressure Force (particles push away when too dense)
+        # Pressure Force
         pressure_force = np.zeros(2)
         for j in range(N_PARTICLES):
-            if i == j:
-                continue
+            if i == j: continue
             r_vec = pos[i] - pos[j]
             r = np.linalg.norm(r_vec)
             if r < H and r > 1e-8:
                 p_term = -MASS * (pressure[i] / (density[i]**2) + pressure[j] / (density[j]**2))
                 pressure_force += p_term * spiky_grad(r_vec, r, H)
 
+        # Viscosity (new part) - makes motion smoother
+        viscosity_force = np.zeros(2)
+        for j in range(N_PARTICLES):
+            if i == j: continue
+            r_vec = pos[i] - pos[j]
+            r = np.linalg.norm(r_vec)
+            if r < H and r > 1e-8:
+                v_diff = vel[j] - vel[i]
+                visc = VISCOSITY * MASS * v_diff * viscosity_laplacian(r, H) / density[j]
+                viscosity_force += visc
+
+        # Apply forces
         vel[i] += pressure_force * DT
+        vel[i] += viscosity_force * DT
 
         # Update position
         pos[i] += vel[i] * DT
@@ -95,7 +114,7 @@ while running:
             vel[i, 1] *= -0.88
             pos[i, 1] = max(0.5, min(DOMAIN_SIZE - 0.5, pos[i, 1]))
 
-        # Draw with correct color: Higher density = Brighter yellow
+        # Draw: Higher density = Brighter yellow
         brightness = int(180 + density[i] * 35)
         brightness = max(80, min(255, brightness))
         px = int(pos[i, 0] * SCALE)
